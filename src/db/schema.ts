@@ -58,12 +58,12 @@ const snippetSchemaRaw = {
     content: {
       type: "string",
     },
-    owner: {
+    user_id: {
       type: "string",
       ref: "user",
     },
   },
-  required: ["id", "content"],
+  required: ["id", "content", "user_id"],
 } as const;
 const snippetSchemaTyped = toTypedRxJsonSchema(snippetSchemaRaw);
 export type SnippetDocType = ExtractDocumentTypeFromTypedRxJsonSchema<

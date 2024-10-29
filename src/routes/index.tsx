@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createId } from "@paralleldrive/cuid2";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/auth-context";
 
 export const Route = createFileRoute("/")({
   component: IndexPage,
@@ -45,12 +46,13 @@ function useSnippets() {
 
 function IndexPage() {
   const { snippets, addSnippet } = useSnippets();
+  const { user } = useAuth();
 
   const [content, setContent] = useState("");
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    addSnippet({ content });
+    addSnippet({ content, user_id: user.id });
   };
 
   return (

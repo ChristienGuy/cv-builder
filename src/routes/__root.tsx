@@ -1,18 +1,23 @@
-import * as React from "react";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { createRxDatabase, addRxPlugin, RxDatabase } from "rxdb";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 
 import { Provider as RxDBProvider } from "rxdb-hooks";
+
 import { cvsSchema, snippetSchema, userSchema } from "../db/schema";
+import { SupabaseReplication } from "@/db/replication";
+import { useEffect, useState } from "react";
+
+import { supabaseClient, supabaseUrl } from "@/db/supabase";
+import { AuthProvider } from "@/auth-context";
 
 export const Route = createRootRoute({
   component: RootComponent,
 });
 
 async function initializeDb() {
-  if (process.env.NODE_ENV === "development") {
+  if (import.meta.env.DEV) {
     await import("rxdb/plugins/dev-mode").then(({ RxDBDevModePlugin }) => {
       addRxPlugin(RxDBDevModePlugin);
     });
@@ -24,31 +29,37 @@ async function initializeDb() {
     ignoreDuplicate: true,
   });
 
-  await db.addCollections({
-    user: {
-      schema: userSchema,
-    },
-  });
-
-  await db.addCollections({
+  const collections = await db.addCollections({
     snippets: {
       schema: snippetSchema,
     },
-  });
-
-  await db.addCollections({
+    user: {
+      schema: userSchema,
+    },
     cvs: {
       schema: cvsSchema,
     },
+  });
+
+  const snippetReplication = new SupabaseReplication({
+    supabaseClient: supabaseClient,
+    collection: collections.snippets,
+    replicationIdentifier: "myId" + supabaseUrl, // TODO: Add Supabase user ID?
+    pull: {},
+    push: {},
+  });
+
+  snippetReplication.error$.subscribe((error) => {
+    console.error("Replication error", error);
   });
 
   return db;
 }
 
 function RootComponent() {
-  const [db, setDb] = React.useState<RxDatabase | null>(null);
+  const [db, setDb] = useState<RxDatabase | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     initializeDb().then((db) => setDb(db));
   }, []);
 
@@ -59,11 +70,13 @@ function RootComponent() {
   }
 
   return (
-    <React.Fragment>
-      <RxDBProvider db={db}>
-        <Outlet />
-        <TanStackRouterDevtools />
-      </RxDBProvider>
-    </React.Fragment>
+    <>
+      <AuthProvider>
+        <RxDBProvider db={db}>
+          <Outlet />
+          <TanStackRouterDevtools />
+        </RxDBProvider>
+      </AuthProvider>
+    </>
   );
 }
