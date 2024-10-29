@@ -10,9 +10,12 @@ const AuthContext = createContext<{
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setIsLoading(false);
     });
 
     const {
@@ -25,6 +28,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = session ? { user: session.user } : null;
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!session) {
     return (

@@ -57,6 +57,17 @@ async function initializeDb() {
 }
 
 function RootComponent() {
+  return (
+    <>
+      <AuthProvider>
+        <DBLayer />
+      </AuthProvider>
+    </>
+  );
+}
+
+// TODO: manage loading state for DB initialization and replication
+function DBLayer() {
   const [db, setDb] = useState<RxDatabase | null>(null);
 
   useEffect(() => {
@@ -71,12 +82,10 @@ function RootComponent() {
 
   return (
     <>
-      <AuthProvider>
-        <RxDBProvider db={db}>
-          <Outlet />
-          <TanStackRouterDevtools />
-        </RxDBProvider>
-      </AuthProvider>
+      <RxDBProvider db={db}>
+        <Outlet />
+        <TanStackRouterDevtools />
+      </RxDBProvider>
     </>
   );
 }
